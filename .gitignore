@@ -1,0 +1,14 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Local backend runtime files
+backend/conf/app.conf
+backend/lightnav.db
+backend/linkdock.db
+backend/backend

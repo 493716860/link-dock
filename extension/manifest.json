@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "LinkDock",
+  "version": "1.0.0",
+  "description": "A fast sidebar workspace for saving, organizing, and reopening bookmarks.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "sidePanel",
+    "tabs",
+    "contextMenus"
+  ],
+  "action": {
+    "default_title": "Open LinkDock"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "quick-save-current-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "快速保存当前页面到 LinkDock"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  }
+}
