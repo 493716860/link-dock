@@ -244,61 +244,73 @@ const saveSeedData = async () => {
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-7xl">
-    <div class="mb-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,#dbeafe_0%,transparent_34%),linear-gradient(135deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-sm">
-      <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div class="min-w-0">
-          <button
-              type="button"
-              @click="emit('close')"
-              class="mb-5 inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 text-xs font-bold text-slate-500 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
-          >
-            <ArrowLeft class="h-3.5 w-3.5" />
-            返回书签主页
-          </button>
-          <div class="flex items-center gap-3">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-200">
-              <Database class="h-5 w-5" />
-            </div>
-            <div>
-              <p class="text-[11px] font-black uppercase tracking-[0.28em] text-blue-600">Super Admin</p>
-              <h1 class="mt-1 text-3xl font-black tracking-tight text-slate-900">默认书签管理</h1>
-            </div>
-          </div>
-          <p class="mt-4 max-w-2xl text-sm leading-relaxed text-slate-500">
-            这里维护的是未登录用户看到的公共默认书签，也是新用户注册后初始化的数据模板。保存后会直接写回后端默认数据文件。
-          </p>
-        </div>
+	  <div class="w-full">
+	    <div class="sticky top-0 z-50 border-b border-slate-200 bg-[#F8FAFC] px-6 py-3 md:px-10">
+	      <div class="mx-auto flex w-full max-w-7xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+	        <div class="flex min-w-0 items-center gap-3">
+	          <button
+	              type="button"
+	              @click="emit('close')"
+	              class="inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition-all hover:border-slate-300 hover:text-slate-900"
+	          >
+	            <ArrowLeft class="h-3.5 w-3.5" />
+	            返回
+	          </button>
+	          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm shadow-slate-200">
+	            <Database class="h-4.5 w-4.5" />
+	          </div>
+	          <div class="min-w-0">
+	            <p class="text-[10px] font-black uppercase tracking-[0.22em] text-blue-600">Super Admin</p>
+	            <h1 class="truncate text-lg font-black tracking-tight text-slate-900">默认书签管理</h1>
+	          </div>
+	        </div>
+	
+	        <div class="flex flex-wrap items-center gap-2">
+	          <button
+	              type="button"
+	              @click="addCategory"
+	              class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white transition-all hover:bg-slate-800"
+	          >
+	            <Plus class="h-3.5 w-3.5" />
+	            新增分类
+	          </button>
+	          <button
+	              type="button"
+	              @click="addSite()"
+	              class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 text-xs font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white"
+	          >
+	            <Plus class="h-3.5 w-3.5" />
+	            新增书签
+	          </button>
+	          <button
+	              type="button"
+	              @click="loadSeedData"
+	              class="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 transition-all hover:border-slate-300"
+	          >
+	            <RefreshCw class="h-3.5 w-3.5" />
+	            重新加载
+	          </button>
+	          <button
+	              type="button"
+	              :disabled="isSaving || !!validationError"
+	              @click="saveSeedData"
+	              class="inline-flex h-9 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-md shadow-blue-200/60 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+	          >
+	            <Loader2 v-if="isSaving" class="h-3.5 w-3.5 animate-spin" />
+	            <Save v-else class="h-3.5 w-3.5" />
+	            保存修改
+	          </button>
+	        </div>
+	      </div>
+	    </div>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-              type="button"
-              @click="loadSeedData"
-              class="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-slate-300"
-          >
-            <RefreshCw class="h-3.5 w-3.5" />
-            重新加载
-          </button>
-          <button
-              type="button"
-              :disabled="isSaving || !!validationError"
-              @click="saveSeedData"
-              class="inline-flex h-10 items-center gap-2 rounded-2xl bg-blue-600 px-5 text-xs font-bold text-white shadow-lg shadow-blue-200/70 transition-all hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-          >
-            <Loader2 v-if="isSaving" class="h-3.5 w-3.5 animate-spin" />
-            <Save v-else class="h-3.5 w-3.5" />
-            保存默认数据
-          </button>
-        </div>
-      </div>
-    </div>
+	    <div class="mx-auto w-full max-w-7xl px-6 py-6 md:px-10">
+	      <div v-if="isLoading" class="flex h-80 flex-col items-center justify-center rounded-[2rem] border border-slate-200 bg-white text-slate-400 shadow-sm">
+	        <Loader2 class="mb-3 h-8 w-8 animate-spin text-blue-600" />
+	        <p class="text-sm font-bold">正在加载默认数据...</p>
+	      </div>
 
-    <div v-if="isLoading" class="flex h-80 flex-col items-center justify-center rounded-[2rem] border border-slate-200 bg-white text-slate-400 shadow-sm">
-      <Loader2 class="mb-3 h-8 w-8 animate-spin text-blue-600" />
-      <p class="text-sm font-bold">正在加载默认数据...</p>
-    </div>
-
-    <div v-else class="space-y-5">
+	      <div v-else class="space-y-5">
       <div v-if="errorMessage || validationError" class="flex items-start gap-3 rounded-3xl border border-red-100 bg-red-50 px-5 py-4 text-sm font-bold text-red-600">
         <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
         <span>{{ errorMessage || validationError }}</span>
@@ -308,20 +320,12 @@ const saveSeedData = async () => {
       </div>
 
       <section class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 class="text-lg font-black text-slate-900">默认分类</h2>
-            <p class="mt-1 text-xs text-slate-400">分类 ID 会被书签引用。修改已有 ID 时，请同步检查书签所属分类。</p>
-          </div>
-          <button
-              type="button"
-              @click="addCategory"
-              class="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 text-xs font-bold text-white transition-all hover:-translate-y-0.5"
-          >
-            <Plus class="h-3.5 w-3.5" />
-            新增分类
-          </button>
-        </div>
+	        <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+	          <div>
+	            <h2 class="text-lg font-black text-slate-900">默认分类</h2>
+	            <p class="mt-1 text-xs text-slate-400">分类 ID 会被书签引用。修改已有 ID 时，请同步检查书签所属分类。</p>
+	          </div>
+	        </div>
 
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <div
@@ -429,20 +433,12 @@ const saveSeedData = async () => {
       </section>
 
       <section class="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 class="text-lg font-black text-slate-900">默认书签</h2>
-            <p class="mt-1 text-xs text-slate-400">这些书签会按当前顺序写入模板，新用户注册后会复制一份到自己的账户。</p>
-          </div>
-          <button
-              type="button"
-              @click="addSite()"
-              class="inline-flex h-10 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-xs font-bold text-white shadow-sm shadow-blue-200 transition-all hover:-translate-y-0.5 hover:bg-blue-700"
-          >
-            <Plus class="h-3.5 w-3.5" />
-            新增书签
-          </button>
-        </div>
+	        <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+	          <div>
+	            <h2 class="text-lg font-black text-slate-900">默认书签</h2>
+	            <p class="mt-1 text-xs text-slate-400">这些书签会按当前顺序写入模板，新用户注册后会复制一份到自己的账户。</p>
+	          </div>
+	        </div>
 
         <div class="grid gap-4 xl:grid-cols-2">
           <div
@@ -541,5 +537,6 @@ const saveSeedData = async () => {
         </div>
       </section>
     </div>
+  </div>
   </div>
 </template>

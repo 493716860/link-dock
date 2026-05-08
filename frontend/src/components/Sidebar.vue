@@ -85,7 +85,7 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
           <button
               class="relative w-full flex items-center rounded-2xl text-sm font-bold transition-all duration-300 border"
               :class="activeCategoryId === null ? 'bg-white shadow-md text-blue-600 border-white' : 'text-slate-500 hover:bg-white/60 border-transparent'"
-              :title="collapsed ? `全部 · ${allSitesCount} 个` : undefined"
+              :title="collapsed ? '全部' : undefined"
               @click="emit('select-category', null)"
           >
             <div class="flex items-center min-w-0 transition-all duration-300" :class="collapsed ? 'h-12 w-full justify-center' : 'gap-2.5 flex-1 py-2 px-3'">
@@ -96,10 +96,11 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
               <span v-if="!collapsed" class="truncate">全部</span>
             </div>
             <span
+                v-if="!collapsed"
                 class="font-black rounded-full shrink-0 transition-all duration-300"
                 :class="[
                   activeCategoryId === null ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400',
-                  collapsed ? 'absolute -right-1 -top-1 min-w-5 h-5 px-1 flex items-center justify-center text-[9px] shadow-sm border border-slate-100' : 'text-[10px] px-2 py-0.5 ml-auto mr-3'
+                  'text-[10px] px-2 py-0.5 ml-auto mr-3'
                 ]"
             >
               {{ allSitesCount }}
@@ -130,7 +131,7 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
                           : 'text-slate-500 hover:bg-white/60 border-transparent',
                       collapsed ? 'h-12 justify-center px-0 py-0' : 'py-2 px-3'
                     ]"
-                    :title="collapsed ? `${category.name} · ${categorySiteCounts[category.id] || 0} 个` : undefined"
+                    :title="collapsed ? category.name : undefined"
                 >
                   <div class="flex items-center min-w-0 transition-all duration-300" :class="collapsed ? 'justify-center' : 'gap-2.5 flex-1'">
                     <div v-if="canEdit && !collapsed" class="drag-handle opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0 -ml-1">
@@ -143,16 +144,16 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
                     <span v-if="!collapsed" class="truncate">{{ category.name }}</span>
                   </div>
 
-                  <div class="relative flex items-center justify-center shrink-0" :class="collapsed ? 'absolute -right-1 -top-1' : 'ml-auto w-6 h-6'">
-                    <span class="flex items-center justify-center font-black transition-all duration-200 rounded-full"
-                          :class="[
-                            activeCategoryId === category.id ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400',
-                            collapsed ? 'min-w-5 h-5 px-1 text-[9px] shadow-sm border border-slate-100' : 'absolute text-[10px] group-hover:opacity-0 group-hover:scale-75 group-has-[[data-state=open]]:opacity-0 group-has-[[data-state=open]]:scale-75 px-1.5 py-0.5'
-                          ]">
-                      {{ categorySiteCounts[category.id] || 0 }}
-                    </span>
+	                  <div v-if="!collapsed" class="relative flex items-center justify-center shrink-0 ml-auto w-6 h-6">
+	                    <span class="flex items-center justify-center font-black transition-all duration-200 rounded-full"
+	                          :class="[
+	                            activeCategoryId === category.id ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400',
+	                            'absolute text-[10px] group-hover:opacity-0 group-hover:scale-75 group-has-[[data-state=open]]:opacity-0 group-has-[[data-state=open]]:scale-75 px-1.5 py-0.5'
+	                          ]">
+	                      {{ categorySiteCounts[category.id] || 0 }}
+	                    </span>
 
-                    <div v-if="canEdit && !collapsed" class="absolute inset-0 flex items-center justify-center">
+	                    <div v-if="canEdit" class="absolute inset-0 flex items-center justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button @click.stop class="h-6 w-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-all duration-200">

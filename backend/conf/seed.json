@@ -1,6 +1,11 @@
 {
   "categories": [
     {
+      "id": "default",
+      "name": "默认分类",
+      "iconName": "📁"
+    },
+    {
       "id": "cat_ai",
       "name": "AI 导航",
       "iconName": "👨‍💻"
@@ -34,6 +39,11 @@
       "id": "cat_mow9a7a7",
       "name": "求职",
       "iconName": "👨‍💻"
+    },
+    {
+      "id": "cat_mown48fx",
+      "name": "旅游",
+      "iconName": "🌍"
     }
   ],
   "sites": [
@@ -43,7 +53,7 @@
       "name": "ChatGPT",
       "url": "https://chatgpt.com",
       "description": "OpenAI 旗下领先的 AI 对话模型",
-      "icon": "https://openai.com/favicon.ico"
+      "icon": "https://chatgpt.com/favicon.ico"
     },
     {
       "id": "site_ai_2",
@@ -51,7 +61,7 @@
       "name": "Claude",
       "url": "https://claude.ai",
       "description": "Anthropic 智能对话助手，长文本处理能力出色",
-      "icon": "https://claude.ai/images/apple-touch-icon.png"
+      "icon": "https://www.google.com/s2/favicons?domain=claude.ai\u0026sz=128"
     },
     {
       "id": "site_ai_3",
@@ -75,7 +85,7 @@
       "name": "V2EX",
       "url": "https://v2ex.com",
       "description": "创意工作者们的社区，程序员聚集地",
-      "icon": ""
+      "icon": "https://v2ex.com/static/icon-192.png"
     },
     {
       "id": "site_dev_3",
@@ -91,7 +101,7 @@
       "name": "Notion",
       "url": "https://www.notion.so",
       "description": "全能型笔记与项目管理工具",
-      "icon": ""
+      "icon": "https://www.notion.so/front-static/favicon.ico"
     },
     {
       "id": "site_tools_2",
@@ -99,7 +109,7 @@
       "name": "TinyPNG",
       "url": "https://tinypng.com",
       "description": "在线图片压缩利器",
-      "icon": ""
+      "icon": "https://tinypng.com/images/favicon.ico"
     },
     {
       "id": "site_media_1",
@@ -107,7 +117,7 @@
       "name": "Bilibili",
       "url": "https://www.bilibili.com",
       "description": "国内领先的年轻人文化社区和视频网站",
-      "icon": ""
+      "icon": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico"
     },
     {
       "id": "site_media_2",
@@ -115,7 +125,7 @@
       "name": "YouTube",
       "url": "https://www.youtube.com",
       "description": "全球最大的视频分享平台",
-      "icon": ""
+      "icon": "https://www.youtube.com/s/desktop/42939318/img/favicon.ico"
     },
     {
       "id": "site_design_1",
@@ -123,7 +133,7 @@
       "name": "Figma",
       "url": "https://www.figma.com",
       "description": "基于浏览器的协同设计工具",
-      "icon": ""
+      "icon": "https://static.figma.com/app/icon/2/icon-128.png"
     },
     {
       "id": "site_design_2",
@@ -131,7 +141,7 @@
       "name": "Iconfont",
       "url": "https://www.iconfont.cn",
       "description": "阿里巴巴矢量图标库",
-      "icon": ""
+      "icon": "https://img.alicdn.com/imgextra/i4/O1CN01Z5paLz1O0zuCC7osS_!!6000000001644-55-tps-83-82.svg"
     },
     {
       "id": "site_learn_1",
@@ -139,7 +149,7 @@
       "name": "MDN Web Docs",
       "url": "https://developer.mozilla.org",
       "description": "最权威的 Web 开发技术文档",
-      "icon": ""
+      "icon": "https://developer.mozilla.org/favicon.ico"
     },
     {
       "id": "site_learn_2",
@@ -147,7 +157,7 @@
       "name": "Coursera",
       "url": "https://www.coursera.org",
       "description": "全球顶级大学在线课程平台",
-      "icon": ""
+      "icon": "https://d3njjcbhbojbot.cloudfront.net/web/images/favicons/favicon-v2-194x194.png"
     },
     {
       "id": "site_mow9b4x7",
@@ -156,6 +166,22 @@
       "url": "https://www.zhipin.com/suzhou/?ka=header-home",
       "description": "BOSS直聘苏州招聘网站，为求职者提供海量2026年05月08日最新苏州人才招聘信息。BOSS直聘苏州招聘网让求职者与Boss直接开聊、加快面试、即时反馈，找工作就来BOSS直聘和Boss开聊吧！",
       "icon": "https://static.zhipin.com/favicon.ico"
+    },
+    {
+      "id": "site_mown4i64",
+      "categoryId": "cat_mown48fx",
+      "name": "鸿途智行",
+      "url": "https://www.allinoneearth.com/zh-CN",
+      "description": "Meta description",
+      "icon": "https://www.allinoneearth.com/logo.svg"
+    },
+    {
+      "id": "site_mown5e5c",
+      "categoryId": "cat_mown48fx",
+      "name": "SeekingChina",
+      "url": "https://www.seeking-china.com/home",
+      "description": "SeekingChina",
+      "icon": "https://www.seeking-china.com/logo.png"
     }
   ]
 }

@@ -9,9 +9,10 @@ import LoginModal from '@/components/LoginModal.vue';
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue';
 import CommandPalette from '@/components/CommandPalette.vue';
 import AdminSeedManager from '@/components/AdminSeedManager.vue';
+import OfficeToolbox from '@/components/OfficeToolbox.vue';
 import {api} from './api';
 import type {Category, Site, WorkflowStatus} from './types';
-import {Loader2, Search, SearchX, Plus, Star, Clock3, Inbox, History, Sparkles, ChevronDown, Github, PanelLeftClose, PanelLeftOpen, AlertTriangle} from 'lucide-vue-next';
+import {Loader2, Search, SearchX, Plus, Star, Clock3, Inbox, History, Sparkles, ChevronDown, ChevronLeft, ChevronRight, Github, AlertTriangle} from 'lucide-vue-next';
 import { onKeyStroke } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import draggable from 'vuedraggable';
@@ -61,6 +62,7 @@ const showCompactCategoryPanel = ref(false);
 const showCompactFilterPanel = ref(false);
 const visibleSiteLimit = ref(60);
 const duplicateSaveMessage = ref('');
+const showOfficeToolbox = ref(false);
 
 const RECENT_CATEGORY_KEY = 'linkdock-recent-category-id';
 const OPEN_SOURCE_URL = 'https://github.com/493716860/link-dock';
@@ -100,7 +102,17 @@ const canShowAdminSeedPage = computed(() => {
 });
 
 const openBookmarkHome = () => {
+  showOfficeToolbox.value = false;
   router.push({ name: 'home' });
+};
+
+const openOfficeToolbox = () => {
+  if (isAdminSeedRoute.value) {
+    router.push({ name: 'home' });
+  }
+  showOfficeToolbox.value = true;
+  showCompactCategoryPanel.value = false;
+  showCompactFilterPanel.value = false;
 };
 
 const toggleSidebarCollapse = () => {
@@ -431,6 +443,7 @@ const handleSelectCategory = (id: string | null) => {
   if (isAdminSeedRoute.value) {
     openBookmarkHome();
   }
+  showOfficeToolbox.value = false;
   activeCategoryId.value = id;
   duplicateSaveMessage.value = '';
   showCompactCategoryPanel.value = false;
@@ -894,19 +907,29 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
     <div v-if="isMobileSidebarOpen" class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 md:hidden" @click="isMobileSidebarOpen = false"></div>
 
     <!-- 侧边栏 (常规模式显示) -->
-    <aside
-        v-if="!isCompactWorkspace"
-        class="fixed inset-y-0 left-0 border-r border-slate-200 bg-white z-50 transform overflow-hidden transition-[width,transform] duration-300 ease-out md:relative md:translate-x-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
-        :class="[
-          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          isSidebarCollapsed ? 'w-64 md:w-20' : 'w-64'
-        ]"
-    >
-      <div class="flex h-16 items-center border-b border-slate-200 transition-all duration-300 ease-out"
-           :class="isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 justify-between'">
-        <div class="flex min-w-0 items-center gap-3 group cursor-pointer hover:opacity-80 transition-opacity"
-             :class="isSidebarCollapsed ? 'md:hidden' : ''"
-             @click="handleSelectCategory(null)">
+	    <aside
+	        v-if="!isCompactWorkspace"
+	        class="fixed inset-y-0 left-0 border-r border-slate-200 bg-white z-50 transform transition-[width,transform] duration-300 ease-out md:relative md:translate-x-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+	        :class="[
+	          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+	          isSidebarCollapsed ? 'w-64 md:w-20' : 'w-64'
+	        ]"
+	    >
+	      <button
+	          type="button"
+	          class="absolute right-0 top-8 z-[60] hidden h-7 w-7 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 shadow-[0_8px_20px_rgba(15,23,42,0.10)] transition-all duration-200 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 active:scale-95 md:flex"
+	          :title="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
+	          :aria-label="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
+	          @click.stop="toggleSidebarCollapse"
+	      >
+	        <ChevronRight v-if="isSidebarCollapsed" class="h-4 w-4" />
+	        <ChevronLeft v-else class="h-4 w-4" />
+	      </button>
+	      <div class="flex h-16 items-center border-b border-slate-200 transition-all duration-300 ease-out"
+	           :class="isSidebarCollapsed ? 'px-3 justify-center overflow-hidden' : 'px-6 justify-start overflow-hidden'">
+	        <div class="flex min-w-0 items-center gap-3 group cursor-pointer hover:opacity-80 transition-opacity"
+	             :class="isSidebarCollapsed ? 'md:hidden' : ''"
+	             @click="handleSelectCategory(null)">
           <div class="h-8 w-8 shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-100">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -917,17 +940,7 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
             LinkDock
           </span>
         </div>
-        <button
-            type="button"
-            class="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm shadow-slate-100 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 active:scale-95"
-            :title="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
-            :aria-label="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
-            @click.stop="toggleSidebarCollapse"
-        >
-          <PanelLeftOpen v-if="isSidebarCollapsed" class="h-4 w-4" />
-          <PanelLeftClose v-else class="h-4 w-4" />
-        </button>
-      </div>
+	      </div>
       <Sidebar :categories="categories" :sites="sites" :activeCategoryId="activeCategoryId" :canEdit="true" :draggedSiteId="draggingSiteId"
                :collapsed="isSidebarCollapsed"
                @select-category="handleSelectCategory" @add-site="openAddSite" @add-category="openAddCategory"
@@ -937,9 +950,9 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
 
     <div class="flex-1 flex flex-col h-full overflow-hidden relative">
       <!-- 顶部 Header (常规模式显示) -->
-      <Header v-if="!isCompactWorkspace" v-model:searchQuery="searchQuery" :user="currentUser"
-              @login="openLogin" @logout="logout" @toggle-sidebar="toggleMobileSidebar" @add-site="openAddSite"
-              @change-password="openChangePassword" @manage-seed="openAdminSeedManager"/>
+	      <Header v-if="!isCompactWorkspace" v-model:searchQuery="searchQuery" :user="currentUser"
+	              @login="openLogin" @logout="logout" @toggle-sidebar="toggleMobileSidebar" @add-site="openAddSite"
+	              @open-toolbox="openOfficeToolbox" @change-password="openChangePassword" @manage-seed="openAdminSeedManager"/>
 
       <!-- 扩展侧边栏专用极简 Header -->
       <div v-if="isCompactWorkspace" class="relative border-b border-slate-200/80 flex flex-col shrink-0 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)]">
@@ -1114,14 +1127,18 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
       </div>
 
       <!-- 主体内容区 -->
-      <main class="flex-1 overflow-y-auto relative custom-scrollbar" :class="isCompactWorkspace ? 'p-4' : 'p-6 md:p-10'">
-        <AdminSeedManager
-            v-if="canShowAdminSeedPage"
-            @close="openBookmarkHome"
-            @saved="fetchData"
-        />
-
-        <div v-else class="max-w-6xl mx-auto w-full">
+	      <main class="flex-1 overflow-y-auto relative custom-scrollbar" :class="canShowAdminSeedPage ? 'p-0' : isCompactWorkspace ? 'p-4' : 'p-6 md:p-10'">
+	        <AdminSeedManager
+	            v-if="canShowAdminSeedPage"
+	            @close="openBookmarkHome"
+	            @saved="fetchData"
+	        />
+	        <OfficeToolbox
+	            v-else-if="showOfficeToolbox"
+	            :currentPageData="currentPageData"
+	        />
+	
+	        <div v-else class="max-w-6xl mx-auto w-full">
 
           <div v-if="!isCompactWorkspace" class="mb-8 flex flex-col gap-3 pb-6 border-b border-slate-200/50 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex flex-wrap items-center gap-2">

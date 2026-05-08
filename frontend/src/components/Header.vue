@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, LogOut, Menu, KeyRound, Database } from 'lucide-vue-next';
+import { Search, LogOut, Menu, KeyRound, Database, Wrench } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -15,6 +15,7 @@ const emit = defineEmits<{
   (e: 'logout'): void;
   (e: 'toggle-sidebar'): void;
   (e: 'add-site'): void;
+  (e: 'open-toolbox'): void;
   (e: 'change-password'): void;
   (e: 'manage-seed'): void;
 }>();
@@ -26,17 +27,19 @@ const localSearchQuery = computed({
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-6 md:px-10">
-    <Button
-        variant="ghost"
-        size="icon"
-        class="md:hidden mr-4 text-slate-500 hover:bg-slate-50 rounded-xl"
-        @click="emit('toggle-sidebar')"
-    >
-      <Menu class="h-5 w-5" />
-    </Button>
+  <header class="sticky top-0 z-30 grid h-16 grid-cols-[auto_1fr_auto] items-center border-b border-slate-200 bg-white px-6 md:grid-cols-[1fr_minmax(320px,448px)_1fr] md:px-10">
+    <div class="flex items-center justify-start">
+      <Button
+          variant="ghost"
+          size="icon"
+          class="md:hidden mr-4 text-slate-500 hover:bg-slate-50 rounded-xl"
+          @click="emit('toggle-sidebar')"
+      >
+        <Menu class="h-5 w-5" />
+      </Button>
+    </div>
 
-    <div class="flex-1 flex items-center justify-start max-w-md">
+    <div class="flex min-w-0 items-center justify-center">
       <div class="relative w-full flex items-center group">
         <Search class="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 z-10 transition-colors group-focus-within:text-blue-500" />
         <input
@@ -51,7 +54,15 @@ const localSearchQuery = computed({
       </div>
     </div>
 
-    <div class="flex items-center gap-4 ml-6">
+    <div class="flex items-center justify-end gap-2 ml-6">
+      <button
+          type="button"
+          @click="emit('open-toolbox')"
+          class="inline-flex h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 shadow-sm transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600"
+      >
+        <Wrench class="h-4 w-4" />
+        <span class="hidden lg:inline">工具箱</span>
+      </button>
       <div v-if="user" class="flex items-center gap-3">
 
         <DropdownMenu>
