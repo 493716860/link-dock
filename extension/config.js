@@ -5,6 +5,6 @@
  * 例如：'https://your-domain.com/'
  */
 window.LinkDockConfig = {
-  baseUrl: 'http://localhost:3000/',// 开发环境
-  // baseUrl:'https://www.superyoyo.ren/',// 生产环境
+  // baseUrl: 'http://localhost:3000/',// 开发环境
+  baseUrl:'https://www.superyoyo.ren/',// 生产环境
 };
