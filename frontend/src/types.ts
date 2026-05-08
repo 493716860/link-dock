@@ -21,6 +21,7 @@ export interface SeedSite {
   url: string;
   description: string;
   icon?: string;
+  sortOrder?: number;
 }
 
 export interface SeedConfig {

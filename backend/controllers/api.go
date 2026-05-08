@@ -34,6 +34,7 @@ type RawSeedSite struct {
 	Url         string `json:"url"`
 	Description string `json:"description"`
 	Icon        string `json:"icon"`
+	SortOrder   int    `json:"sortOrder"`
 }
 
 type SeedConfig struct {
@@ -198,6 +199,7 @@ func (c *DataController) SaveSeedData() {
 		seed.Sites[i].Url = strings.TrimSpace(seed.Sites[i].Url)
 		seed.Sites[i].Description = strings.TrimSpace(seed.Sites[i].Description)
 		seed.Sites[i].Icon = strings.TrimSpace(seed.Sites[i].Icon)
+		seed.Sites[i].SortOrder = i
 	}
 
 	if err := validateSeedConfig(seed); err != nil {
@@ -249,10 +251,14 @@ func (c *DataController) GetPublicData() {
 				break
 			}
 		}
+		sortOrder := rs.SortOrder
+		if sortOrder == 0 {
+			sortOrder = i
+		}
 		sites = append(sites, &models.Site{
 			Id:          int64(i + 1),
 			CategoryId:  int64(catIdx),
-			SortOrder:   i,
+			SortOrder:   sortOrder,
 			Name:        rs.Name,
 			Url:         rs.Url,
 			Description: rs.Description,
@@ -274,35 +280,57 @@ func seedDefaultData(userId int64) {
 
 	// 映射表：seed_string_id -> db_actual_id
 	catIdMap := make(map[string]int64)
+	defaultSeedCategory := RawSeedCategory{
+		Id:       "default",
+		Name:     "默认分类",
+		IconName: "📁",
+	}
+	for _, rc := range rawCats {
+		if rc.Id == "default" {
+			defaultSeedCategory = rc
+			break
+		}
+	}
 
 	// 1. 创建默认分类
 	defaultCat := &models.Category{
-		UserId:   userId,
-		Name:     "默认分类",
-		IconName: "📁",
+		UserId:    userId,
+		Name:      defaultSeedCategory.Name,
+		IconName:  defaultSeedCategory.IconName,
+		SortOrder: 0,
 	}
 	if id, err := o.Insert(defaultCat); err == nil {
 		catIdMap["default"] = id
 	}
 
 	// 2. 注入种子分类
+	nextCategorySortOrder := 1
 	for _, rc := range rawCats {
+		if rc.Id == "default" {
+			continue
+		}
 		newCat := models.Category{
-			UserId:   userId,
-			Name:     rc.Name,
-			IconName: rc.IconName,
+			UserId:    userId,
+			Name:      rc.Name,
+			IconName:  rc.IconName,
+			SortOrder: nextCategorySortOrder,
 		}
 		if id, err := o.Insert(&newCat); err == nil {
 			catIdMap[rc.Id] = id
 		}
+		nextCategorySortOrder++
 	}
 
 	// 3. 注入种子书签
 	for i, rs := range rawSites {
+		sortOrder := rs.SortOrder
+		if sortOrder == 0 {
+			sortOrder = i
+		}
 		newSite := models.Site{
 			UserId:         userId,
 			CategoryId:     catIdMap[rs.CategoryId],
-			SortOrder:      i,
+			SortOrder:      sortOrder,
 			Name:           rs.Name,
 			Url:            rs.Url,
 			Description:    rs.Description,

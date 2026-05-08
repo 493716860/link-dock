@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { api } from '@/api';
 import type { SeedCategory, SeedSite } from '@/types';
-import { AlertTriangle, ArrowLeft, Database, Loader2, Plus, RefreshCw, Save, Trash2, Wand2 } from 'lucide-vue-next';
+import { AlertTriangle, ArrowDown, ArrowLeft, ArrowUp, Database, Loader2, Plus, RefreshCw, Save, Trash2, Wand2 } from 'lucide-vue-next';
 
 const emit = defineEmits<{
   (e: 'close'): void;
@@ -15,6 +15,10 @@ const isLoading = ref(false);
 const isSaving = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
+const highlightedCategoryId = ref('');
+const highlightedSiteId = ref('');
+const openIconPickerCategoryId = ref('');
+let highlightTimer: ReturnType<typeof window.setTimeout> | null = null;
 
 const iconOptions = [
   '📁', '🤖', '👨‍💻', '🛠️', '🎬', '🎨', '📚', '⭐',
@@ -35,6 +39,37 @@ const slugify = (value: string, fallback: string) => {
 
 const nextCategoryId = () => `cat_${Date.now().toString(36)}`;
 const nextSiteId = (name = '') => `site_${slugify(name, Date.now().toString(36))}`;
+const defaultCategory = (): SeedCategory => ({
+  id: 'default',
+  name: '默认分类',
+  iconName: '📁',
+});
+
+const scrollToSeedCard = async (type: 'category' | 'site', id: string) => {
+  await nextTick();
+  if (highlightTimer) window.clearTimeout(highlightTimer);
+  highlightedCategoryId.value = type === 'category' ? id : '';
+  highlightedSiteId.value = type === 'site' ? id : '';
+
+  const escapedId = window.CSS?.escape ? window.CSS.escape(id) : id.replace(/"/g, '\\"');
+  const card = document.querySelector<HTMLElement>(`[data-seed-${type}-id="${escapedId}"]`);
+  if (!card) return;
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const firstInput = card.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select');
+  window.setTimeout(() => {
+    firstInput?.focus();
+    if (firstInput instanceof HTMLInputElement || firstInput instanceof HTMLTextAreaElement) {
+      firstInput.select();
+    }
+  }, 320);
+
+  highlightTimer = window.setTimeout(() => {
+    highlightedCategoryId.value = '';
+    highlightedSiteId.value = '';
+    highlightTimer = null;
+  }, 2400);
+};
 
 const categoryIdSet = computed(() => new Set(categories.value.map(category => category.id)));
 
@@ -76,8 +111,14 @@ const loadSeedData = async () => {
   successMessage.value = '';
   try {
     const data = await api.getSeedData();
-    categories.value = (data.categories || []).map((category: SeedCategory) => ({ ...category }));
-    sites.value = (data.sites || []).map((site: SeedSite) => ({ ...site }));
+    const loadedCategories = (data.categories || []).map((category: SeedCategory) => ({ ...category }));
+    categories.value = loadedCategories.some(category => category.id === 'default')
+        ? loadedCategories
+        : [defaultCategory(), ...loadedCategories];
+    sites.value = (data.sites || [])
+        .map((site: SeedSite, index: number) => ({ ...site, sortOrder: site.sortOrder ?? index, originalIndex: index }))
+        .sort((a: SeedSite & { originalIndex: number }, b: SeedSite & { originalIndex: number }) => (a.sortOrder ?? a.originalIndex) - (b.sortOrder ?? b.originalIndex))
+        .map(({ originalIndex, ...site }: SeedSite & { originalIndex: number }) => site);
   } catch (error: any) {
     errorMessage.value = error?.message || '默认数据加载失败';
   } finally {
@@ -88,11 +129,23 @@ const loadSeedData = async () => {
 onMounted(loadSeedData);
 
 const addCategory = () => {
-  categories.value.push({
+  const category = {
     id: nextCategoryId(),
     name: '新分类',
     iconName: '📁',
-  });
+  };
+  categories.value.push(category);
+  errorMessage.value = '';
+  successMessage.value = '';
+  scrollToSeedCard('category', category.id);
+};
+
+const moveCategory = (index: number, direction: -1 | 1) => {
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= categories.value.length) return;
+  const nextCategories = [...categories.value];
+  [nextCategories[index], nextCategories[nextIndex]] = [nextCategories[nextIndex], nextCategories[index]];
+  categories.value = nextCategories;
 };
 
 const deleteCategory = (categoryId: string) => {
@@ -109,22 +162,36 @@ const deleteCategory = (categoryId: string) => {
 
 const selectCategoryIcon = (category: SeedCategory, icon: string) => {
   category.iconName = icon;
+  openIconPickerCategoryId.value = '';
 };
 
 const addSite = (categoryId?: string) => {
   const fallbackCategoryId = categoryId || categories.value[0]?.id || '';
-  sites.value.push({
+  const site = {
     id: nextSiteId(),
     categoryId: fallbackCategoryId,
     name: '新书签',
     url: 'https://example.com',
     description: '',
     icon: '',
-  });
+    sortOrder: sites.value.length,
+  };
+  sites.value.push(site);
+  errorMessage.value = '';
+  successMessage.value = '';
+  scrollToSeedCard('site', site.id);
 };
 
 const deleteSite = (siteId: string) => {
   sites.value = sites.value.filter(site => site.id !== siteId);
+};
+
+const moveSite = (index: number, direction: -1 | 1) => {
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= sites.value.length) return;
+  const nextSites = [...sites.value];
+  [nextSites[index], nextSites[nextIndex]] = [nextSites[nextIndex], nextSites[index]];
+  sites.value = nextSites.map((site, sortOrder) => ({ ...site, sortOrder }));
 };
 
 const fillSiteMetadata = async (site: SeedSite) => {
@@ -156,13 +223,14 @@ const saveSeedData = async () => {
         name: category.name.trim(),
         iconName: category.iconName.trim() || '📁',
       })),
-      sites: sites.value.map(site => ({
+      sites: sites.value.map((site, index) => ({
         id: site.id.trim(),
         categoryId: site.categoryId,
         name: site.name.trim(),
         url: site.url.trim(),
         description: site.description.trim(),
         icon: (site.icon || '').trim(),
+        sortOrder: index,
       })),
     });
     successMessage.value = '默认数据已保存。未登录公共书签会立即生效，新用户注册时也会使用这份数据。';
@@ -257,9 +325,11 @@ const saveSeedData = async () => {
 
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <div
-              v-for="category in categories"
+              v-for="(category, index) in categories"
               :key="category.id"
-              class="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
+              :data-seed-category-id="category.id"
+              class="rounded-3xl border p-4 transition-all duration-300 hover:border-slate-200 hover:bg-white hover:shadow-sm"
+              :class="highlightedCategoryId === category.id ? 'border-blue-300 bg-blue-50/70 shadow-lg shadow-blue-100/70 ring-4 ring-blue-500/10' : 'border-slate-100 bg-slate-50/80'"
           >
             <div class="mb-4 flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
@@ -271,32 +341,62 @@ const saveSeedData = async () => {
                   <p class="mt-0.5 text-xs font-semibold text-slate-400">{{ sitesByCategory.get(category.id) || 0 }} 个书签</p>
                 </div>
               </div>
-              <button
-                  type="button"
-                  @click="addSite(category.id)"
-                  class="inline-flex h-8 items-center rounded-xl bg-blue-50 px-2.5 text-xs font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white"
-              >
-                加书签
-              </button>
+              <div class="flex shrink-0 items-center gap-1.5">
+                <button
+                    type="button"
+                    :disabled="index === 0"
+                    @click="moveCategory(index, -1)"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="上移分类"
+                >
+                  <ArrowUp class="h-3.5 w-3.5" />
+                </button>
+                <button
+                    type="button"
+                    :disabled="index === categories.length - 1"
+                    @click="moveCategory(index, 1)"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="下移分类"
+                >
+                  <ArrowDown class="h-3.5 w-3.5" />
+                </button>
+                <button
+                    type="button"
+                    @click="addSite(category.id)"
+                    class="inline-flex h-8 items-center rounded-xl bg-blue-50 px-2.5 text-xs font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white"
+                >
+                  加书签
+                </button>
+              </div>
             </div>
 
-            <div class="space-y-2">
-              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">图标</label>
-              <div class="rounded-2xl border border-slate-200 bg-white p-3">
-                <div class="mb-3 flex items-center gap-2">
-                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-xl ring-1 ring-slate-100">
-                    {{ category.iconName || '📁' }}
-                  </div>
-                  <input
-                      v-model="category.iconName"
-                      class="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
-                      placeholder="也可以手动输入 emoji"
-                  />
-                </div>
-                <div class="grid max-h-28 grid-cols-8 gap-1.5 overflow-y-auto pr-1 custom-scrollbar">
-                  <button
-                      v-for="icon in iconOptions"
-                      :key="icon"
+	            <div class="space-y-2">
+	              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400">图标</label>
+	              <div class="rounded-2xl border border-slate-200 bg-white p-3">
+	                <div class="flex items-center gap-2">
+	                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-xl ring-1 ring-slate-100">
+	                    {{ category.iconName || '📁' }}
+	                  </div>
+	                  <input
+	                      v-model="category.iconName"
+	                      class="h-10 min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold outline-none focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
+	                      placeholder="也可以手动输入 emoji"
+	                  />
+	                  <button
+	                      type="button"
+	                      @click="openIconPickerCategoryId = openIconPickerCategoryId === category.id ? '' : category.id"
+	                      class="inline-flex h-10 shrink-0 items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-500 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600"
+	                  >
+	                    {{ openIconPickerCategoryId === category.id ? '收起' : '选择' }}
+	                  </button>
+	                </div>
+	                <div
+	                    v-if="openIconPickerCategoryId === category.id"
+	                    class="mt-3 grid max-h-28 grid-cols-8 gap-1.5 overflow-y-auto pr-1 custom-scrollbar"
+	                >
+	                  <button
+	                      v-for="icon in iconOptions"
+	                      :key="icon"
                       type="button"
                       @click="selectCategoryIcon(category, icon)"
                       class="flex h-8 items-center justify-center rounded-xl text-base transition-all hover:bg-blue-50 hover:scale-105"
@@ -346,9 +446,11 @@ const saveSeedData = async () => {
 
         <div class="grid gap-4 xl:grid-cols-2">
           <div
-              v-for="site in sites"
+              v-for="(site, index) in sites"
               :key="site.id"
-              class="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
+              :data-seed-site-id="site.id"
+              class="rounded-3xl border p-4 transition-all duration-300 hover:border-slate-200 hover:bg-white hover:shadow-sm"
+              :class="highlightedSiteId === site.id ? 'border-blue-300 bg-blue-50/70 shadow-lg shadow-blue-100/70 ring-4 ring-blue-500/10' : 'border-slate-100 bg-slate-50/80'"
           >
             <div class="mb-4 flex items-start justify-between gap-3">
               <div class="flex min-w-0 items-center gap-3">
@@ -361,14 +463,34 @@ const saveSeedData = async () => {
                   <p class="mt-0.5 truncate text-xs text-slate-400">{{ site.url }}</p>
                 </div>
               </div>
-              <button
-                  type="button"
-                  @click="deleteSite(site.id)"
-                  class="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-red-100 bg-white px-2.5 text-xs font-bold text-red-500 transition-all hover:bg-red-50"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-                删除
-              </button>
+              <div class="flex shrink-0 items-center gap-1.5">
+                <button
+                    type="button"
+                    :disabled="index === 0"
+                    @click="moveSite(index, -1)"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="上移书签"
+                >
+                  <ArrowUp class="h-3.5 w-3.5" />
+                </button>
+                <button
+                    type="button"
+                    :disabled="index === sites.length - 1"
+                    @click="moveSite(index, 1)"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition-all hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="下移书签"
+                >
+                  <ArrowDown class="h-3.5 w-3.5" />
+                </button>
+                <button
+                    type="button"
+                    @click="deleteSite(site.id)"
+                    class="inline-flex h-8 items-center gap-1.5 rounded-xl border border-red-100 bg-white px-2.5 text-xs font-bold text-red-500 transition-all hover:bg-red-50"
+                >
+                  <Trash2 class="h-3.5 w-3.5" />
+                  删除
+                </button>
+              </div>
             </div>
 
             <div class="grid gap-3 md:grid-cols-2">
