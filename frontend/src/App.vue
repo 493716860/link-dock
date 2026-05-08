@@ -60,7 +60,7 @@ const showCompactCategoryPanel = ref(false);
 const showCompactFilterPanel = ref(false);
 
 const RECENT_CATEGORY_KEY = 'linkdock-recent-category-id';
-const OPEN_SOURCE_URL = 'https://github.com/your-github/linkdock';
+const OPEN_SOURCE_URL = 'https://github.com/493716860/link-dock';
 
 const normalizeUrl = (raw?: string) => {
   const target = (raw || '').trim();
@@ -1210,7 +1210,7 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
           <div class="leading-relaxed">
             <span class="font-bold text-slate-700">LinkDock</span>
             <span class="mx-1.5 text-slate-300">/</span>
-            <span>一个开源的浏览器书签工作台，欢迎关注和 Star。</span>
+            <span>由个人开发的浏览器书签工作台，欢迎关注和 Star。</span>
           </div>
           <a
               :href="OPEN_SOURCE_URL"
