@@ -37,6 +37,8 @@ const workflowLabel = computed(() => {
   return '';
 });
 
+const isImageIcon = computed(() => /^https?:\/\//i.test((props.site.icon || '').trim()));
+
 const tags = computed(() => {
   return (props.site.tagsText || '')
       .split(',')
@@ -55,7 +57,10 @@ const tags = computed(() => {
   >
     <div class="flex items-start gap-3">
       <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-        <img v-if="site.icon && !iconLoadError" :src="site.icon" class="h-5 w-5 object-contain" referrerpolicy="no-referrer" @error="iconLoadError = true" />
+        <img v-if="isImageIcon && !iconLoadError" :src="site.icon" class="h-5 w-5 object-contain" referrerpolicy="no-referrer" @error="iconLoadError = true" />
+        <div v-else-if="site.icon" class="flex h-full w-full items-center justify-center bg-white text-lg leading-none">
+          {{ site.icon }}
+        </div>
         <div v-else class="flex h-full w-full items-center justify-center bg-slate-100 text-xs font-black text-slate-500">
           {{ site.name.charAt(0).toUpperCase() }}
         </div>
@@ -147,7 +152,10 @@ const tags = computed(() => {
 
       <div class="relative z-20 flex gap-2.5 items-center mb-2.5">
       <div class="w-8 h-8 shrink-0 rounded-[8px] shadow-sm flex items-center justify-center bg-white border border-white/80 group-hover:shadow-md group-hover:scale-105 transition-all duration-300 overflow-hidden">
-        <img v-if="site.icon && !iconLoadError" :src="site.icon" class="w-4 h-4 object-contain" referrerpolicy="no-referrer" @error="iconLoadError = true" />
+        <img v-if="isImageIcon && !iconLoadError" :src="site.icon" class="w-4 h-4 object-contain" referrerpolicy="no-referrer" @error="iconLoadError = true" />
+        <div v-else-if="site.icon" class="flex h-full w-full items-center justify-center bg-white text-base leading-none">
+          {{ site.icon }}
+        </div>
         <div v-else class="w-full h-full flex items-center justify-center text-[11px] font-black text-slate-400 bg-slate-50">
           {{ site.name.charAt(0).toUpperCase() }}
         </div>

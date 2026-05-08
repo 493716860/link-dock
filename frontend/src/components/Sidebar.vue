@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import draggable from 'vuedraggable';
 import type { Category, Site } from '../types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, GripVertical, MoreHorizontal, LayoutGrid, Pencil, Trash } from 'lucide-vue-next';
+import { Plus, GripVertical, MoreHorizontal, LayoutGrid } from 'lucide-vue-next';
 
 const props = defineProps<{
   categories: Category[];
@@ -11,6 +11,7 @@ const props = defineProps<{
   activeCategoryId: string | null;
   canEdit: boolean;
   draggedSiteId?: string | null;
+  collapsed?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -65,39 +66,52 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col px-4 py-6 border-transparent">
-    <div class="space-y-6 flex flex-col h-full">
-      <!-- Main Navigation -->
-      <div class="space-y-1 shrink-0">
-        <button
-            class="w-full flex items-center px-4 py-2.5 rounded-2xl text-sm font-bold transition-all duration-300"
-            :class="activeCategoryId === null ? 'bg-white shadow-md text-blue-600 border border-white' : 'text-slate-500 hover:bg-white/50 border border-transparent'"
-            @click="emit('select-category', null)"
-        >
-          <div class="flex items-center gap-3 flex-1">
-            <LayoutGrid class="h-4 w-4" />
-            <span>所有项目</span>
-          </div>
-          <span class="text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ml-auto" :class="activeCategoryId === null ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400'">{{ allSitesCount }}</span>
-        </button>
-      </div>
-
-      <!-- Categories Section -->
-      <div class="space-y-2 flex-1 flex flex-col min-h-0">
-        <div class="flex items-center justify-between px-2 mb-2 shrink-0">
-          <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">我的分类</h4>
-          <button v-if="canEdit" class="w-6 h-6 rounded-md hover:bg-white hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all active:scale-90" @click="emit('add-category')">
+  <div class="flex h-full flex-col border-transparent transition-all duration-300 ease-out" :class="collapsed ? 'px-2 py-4' : 'px-4 py-6'">
+    <div class="flex h-full flex-col transition-all duration-300 ease-out" :class="collapsed ? 'space-y-3' : 'space-y-4'">
+      <div v-if="canEdit" class="flex shrink-0 transition-all duration-300" :class="collapsed ? 'justify-center' : 'justify-end px-1'">
+          <button
+              class="rounded-md hover:bg-white hover:shadow-sm flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all active:scale-90"
+              :class="collapsed ? 'h-10 w-10 rounded-2xl border border-slate-100 bg-white/80 shadow-sm' : 'w-6 h-6'"
+              title="新增分类"
+              aria-label="新增分类"
+              @click="emit('add-category')"
+          >
             <Plus class="h-4 w-4" />
           </button>
-        </div>
+      </div>
 
-        <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+      <div class="flex-1 overflow-y-auto custom-scrollbar" :class="collapsed ? 'px-0' : 'pr-1'">
+        <div class="space-y-1 pb-4">
+          <button
+              class="relative w-full flex items-center rounded-2xl text-sm font-bold transition-all duration-300 border"
+              :class="activeCategoryId === null ? 'bg-white shadow-md text-blue-600 border-white' : 'text-slate-500 hover:bg-white/60 border-transparent'"
+              :title="collapsed ? `全部 · ${allSitesCount} 个` : undefined"
+              @click="emit('select-category', null)"
+          >
+            <div class="flex items-center min-w-0 transition-all duration-300" :class="collapsed ? 'h-12 w-full justify-center' : 'gap-2.5 flex-1 py-2 px-3'">
+              <div class="shrink-0 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center transition-all duration-300"
+                   :class="collapsed ? 'h-9 w-9 rounded-2xl' : 'w-6 h-6'">
+                <LayoutGrid class="shrink-0 transition-all duration-300" :class="collapsed ? 'h-5 w-5' : 'h-3.5 w-3.5'" />
+              </div>
+              <span v-if="!collapsed" class="truncate">全部</span>
+            </div>
+            <span
+                class="font-black rounded-full shrink-0 transition-all duration-300"
+                :class="[
+                  activeCategoryId === null ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400',
+                  collapsed ? 'absolute -right-1 -top-1 min-w-5 h-5 px-1 flex items-center justify-center text-[9px] shadow-sm border border-slate-100' : 'text-[10px] px-2 py-0.5 ml-auto mr-3'
+                ]"
+            >
+              {{ allSitesCount }}
+            </span>
+          </button>
+
           <draggable
               v-model="draggableCategories"
               item-key="id"
-              class="space-y-1 pb-4"
+              class="space-y-1"
               handle=".drag-handle"
-              :disabled="!canEdit"
+              :disabled="!canEdit || collapsed"
               ghost-class="opacity-40"
           >
             <template #item="{ element: category }">
@@ -107,30 +121,38 @@ const handleCategoryDrop = (event: DragEvent, categoryId: string) => {
                     @dragover="handleCategoryDragOver($event, category.id)"
                     @dragleave="handleCategoryDragLeave(category.id)"
                     @drop="handleCategoryDrop($event, category.id)"
-                    class="w-full py-2 px-3 rounded-2xl text-sm font-bold transition-all duration-300 flex items-center cursor-pointer border"
-                    :class="dropTargetCategoryId === category.id
+                    class="relative w-full rounded-2xl text-sm font-bold transition-all duration-300 flex items-center cursor-pointer border"
+                    :class="[
+                      dropTargetCategoryId === category.id
                         ? 'bg-blue-50 shadow-md text-blue-600 border-blue-200 ring-2 ring-blue-200/60'
                         : activeCategoryId === category.id
                           ? 'bg-white shadow-md text-blue-600 border-white'
-                          : 'text-slate-500 hover:bg-white/60 border-transparent'"
+                          : 'text-slate-500 hover:bg-white/60 border-transparent',
+                      collapsed ? 'h-12 justify-center px-0 py-0' : 'py-2 px-3'
+                    ]"
+                    :title="collapsed ? `${category.name} · ${categorySiteCounts[category.id] || 0} 个` : undefined"
                 >
-                  <div class="flex items-center gap-2.5 flex-1 min-w-0">
-                    <div v-if="canEdit" class="drag-handle opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0 -ml-1">
+                  <div class="flex items-center min-w-0 transition-all duration-300" :class="collapsed ? 'justify-center' : 'gap-2.5 flex-1'">
+                    <div v-if="canEdit && !collapsed" class="drag-handle opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0 -ml-1">
                       <GripVertical class="h-3.5 w-3.5 text-slate-300" />
                     </div>
-                    <div class="w-6 h-6 shrink-0 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center transition-transform group-hover:scale-105">
-                      <span class="text-[11px] leading-none">{{ category.iconName || '📁' }}</span>
+                    <div class="shrink-0 rounded-lg bg-white border border-slate-100 shadow-sm flex items-center justify-center transition-all duration-300 group-hover:scale-105"
+                         :class="collapsed ? 'h-9 w-9 rounded-2xl' : 'w-6 h-6'">
+                      <span class="leading-none" :class="collapsed ? 'text-base' : 'text-[11px]'">{{ category.iconName || '📁' }}</span>
                     </div>
-                    <span class="truncate">{{ category.name }}</span>
+                    <span v-if="!collapsed" class="truncate">{{ category.name }}</span>
                   </div>
 
-                  <div class="relative flex items-center justify-center shrink-0 ml-auto w-6 h-6">
-                    <span class="absolute flex items-center justify-center text-[10px] font-black transition-all duration-200 group-hover:opacity-0 group-hover:scale-75 group-has-[[data-state=open]]:opacity-0 group-has-[[data-state=open]]:scale-75 px-1.5 py-0.5 rounded-full"
-                          :class="activeCategoryId === category.id ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400'">
+                  <div class="relative flex items-center justify-center shrink-0" :class="collapsed ? 'absolute -right-1 -top-1' : 'ml-auto w-6 h-6'">
+                    <span class="flex items-center justify-center font-black transition-all duration-200 rounded-full"
+                          :class="[
+                            activeCategoryId === category.id ? 'bg-blue-50 text-blue-600' : 'bg-white text-slate-400',
+                            collapsed ? 'min-w-5 h-5 px-1 text-[9px] shadow-sm border border-slate-100' : 'absolute text-[10px] group-hover:opacity-0 group-hover:scale-75 group-has-[[data-state=open]]:opacity-0 group-has-[[data-state=open]]:scale-75 px-1.5 py-0.5'
+                          ]">
                       {{ categorySiteCounts[category.id] || 0 }}
                     </span>
 
-                    <div v-if="canEdit" class="absolute inset-0 flex items-center justify-center">
+                    <div v-if="canEdit && !collapsed" class="absolute inset-0 flex items-center justify-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button @click.stop class="h-6 w-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-all duration-200">

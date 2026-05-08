@@ -11,7 +11,7 @@ import CommandPalette from '@/components/CommandPalette.vue';
 import AdminSeedManager from '@/components/AdminSeedManager.vue';
 import {api} from './api';
 import type {Category, Site, WorkflowStatus} from './types';
-import {Loader2, Search, SearchX, Plus, Star, Clock3, Inbox, History, Sparkles, ChevronDown, Github} from 'lucide-vue-next';
+import {Loader2, Search, SearchX, Plus, Star, Clock3, Inbox, History, Sparkles, ChevronDown, Github, PanelLeftClose, PanelLeftOpen, AlertTriangle} from 'lucide-vue-next';
 import { onKeyStroke } from '@vueuse/core';
 import { useRoute, useRouter } from 'vue-router';
 import draggable from 'vuedraggable';
@@ -35,6 +35,7 @@ const draggingSiteId = ref<string | null>(null);
 const isDroppingToSidebarCategory = ref(false);
 const isDataLoaded = ref(false);
 const isSidebarMode = ref(false);
+const isSidebarCollapsed = ref(false);
 const connectionIssue = ref(false);
 
 const retryFetch = () => {
@@ -58,9 +59,12 @@ const showCommandPalette = ref(false);
 const showChangePasswordModal = ref(false);
 const showCompactCategoryPanel = ref(false);
 const showCompactFilterPanel = ref(false);
+const visibleSiteLimit = ref(60);
+const duplicateSaveMessage = ref('');
 
 const RECENT_CATEGORY_KEY = 'linkdock-recent-category-id';
 const OPEN_SOURCE_URL = 'https://github.com/493716860/link-dock';
+const SITE_PAGE_SIZE = 60;
 
 const normalizeUrl = (raw?: string) => {
   const target = (raw || '').trim();
@@ -97,6 +101,10 @@ const canShowAdminSeedPage = computed(() => {
 
 const openBookmarkHome = () => {
   router.push({ name: 'home' });
+};
+
+const toggleSidebarCollapse = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value;
 };
 
 const currentPageExistingSite = computed(() => {
@@ -169,9 +177,11 @@ const openSaveCurrentPage = () => {
     return;
   }
   if (currentPageExistingSite.value) {
-    openEditSite(currentPageExistingSite.value);
+    const categoryName = categories.value.find(category => String(category.id) === String(currentPageExistingSite.value?.categoryId))?.name || '已有分类';
+    duplicateSaveMessage.value = `这个网址已经保存过了，位于「${categoryName}」中。`;
     return;
   }
+  duplicateSaveMessage.value = '';
   editingSite.value = null;
   initialSiteData.value = currentPageData.value;
   preferredCategoryId.value = recommendedCategoryIdForCurrentPage.value;
@@ -185,6 +195,8 @@ const quickSaveCurrentPage = async () => {
     return;
   }
   if (currentPageExistingSite.value) {
+    const categoryName = categories.value.find(category => String(category.id) === String(currentPageExistingSite.value?.categoryId))?.name || '已有分类';
+    duplicateSaveMessage.value = `这个网址已经保存过了，位于「${categoryName}」中。`;
     pendingQuickSave.value = false;
     return;
   }
@@ -227,10 +239,12 @@ const quickSaveCurrentPage = async () => {
       isPublic: true,
     } as Site);
     window.localStorage.setItem(RECENT_CATEGORY_KEY, categoryId);
+    duplicateSaveMessage.value = '';
     pendingQuickSave.value = false;
     await fetchData();
   } catch (error: any) {
     if (error?.status === 409) {
+      duplicateSaveMessage.value = '这个网址已经保存过了，不需要重复添加。';
       pendingQuickSave.value = false;
       await fetchData();
       return;
@@ -418,6 +432,7 @@ const handleSelectCategory = (id: string | null) => {
     openBookmarkHome();
   }
   activeCategoryId.value = id;
+  duplicateSaveMessage.value = '';
   showCompactCategoryPanel.value = false;
   if (window.innerWidth < 768) {
     isMobileSidebarOpen.value = false;
@@ -542,10 +557,15 @@ const saveSite = async (data: any) => {
       await api.createSite(data);
     }
     window.localStorage.setItem(RECENT_CATEGORY_KEY, data.categoryId);
+    duplicateSaveMessage.value = '';
     showSiteForm.value = false;
     pendingQuickSave.value = false;
     await fetchData();
   } catch (error: any) {
+    if (error?.status === 409) {
+      alert('这个网址已经保存过了，不需要重复添加。');
+      return;
+    }
     alert(error?.message || "保存失败");
   }
 }
@@ -605,6 +625,10 @@ watch([isDataLoaded, currentUser, () => route.name], () => {
   if (route.name === 'admin-seed' && !currentUser.value?.isSuperAdmin) {
     router.replace({ name: 'home' });
   }
+});
+
+watch([activeCategoryId, searchQuery, quickFilter], () => {
+  visibleSiteLimit.value = SITE_PAGE_SIZE;
 });
 
 const filteredGroupedSites = computed(() => {
@@ -696,8 +720,37 @@ const flatFilteredSites = computed(() => {
   return filteredGroupedSites.value.flatMap(group => group.sites);
 });
 
+const visibleFlatFilteredSites = computed(() => {
+  return flatFilteredSites.value.slice(0, visibleSiteLimit.value);
+});
+
+const visibleFilteredGroupedSites = computed(() => {
+  let remaining = visibleSiteLimit.value;
+  return filteredGroupedSites.value
+      .map(group => {
+        if (remaining <= 0) {
+          return { category: group.category, sites: [] };
+        }
+        const sites = group.sites.slice(0, remaining);
+        remaining -= sites.length;
+        return { category: group.category, sites };
+      })
+      .filter(group => group.sites.length > 0);
+});
+
+const hasMoreFilteredSites = computed(() => {
+  return flatFilteredSites.value.length > visibleSiteLimit.value;
+});
+
+const loadMoreSites = () => {
+  visibleSiteLimit.value += SITE_PAGE_SIZE;
+};
+
 const canDragSites = computed(() => {
-  return !!currentUser.value && !searchQuery.value.trim() && quickFilter.value === 'all';
+  return !!currentUser.value
+      && !searchQuery.value.trim()
+      && quickFilter.value === 'all'
+      && flatFilteredSites.value.length <= visibleSiteLimit.value;
 });
 
 const persistSiteGroups = async (groups: SiteGroup[]) => {
@@ -843,20 +896,40 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
     <!-- 侧边栏 (常规模式显示) -->
     <aside
         v-if="!isCompactWorkspace"
-        class="fixed inset-y-0 left-0 w-64 border-r border-slate-200 bg-white z-50 transition-transform duration-300 transform md:relative md:translate-x-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
-        :class="isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+        class="fixed inset-y-0 left-0 border-r border-slate-200 bg-white z-50 transform overflow-hidden transition-[width,transform] duration-300 ease-out md:relative md:translate-x-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]"
+        :class="[
+          isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          isSidebarCollapsed ? 'w-64 md:w-20' : 'w-64'
+        ]"
     >
-      <div class="flex h-16 items-center px-6 border-b border-slate-200">
-        <div class="flex items-center gap-3 group cursor-pointer hover:opacity-80 transition-opacity" @click="handleSelectCategory(null)">
-          <div class="h-8 w-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-100">
+      <div class="flex h-16 items-center border-b border-slate-200 transition-all duration-300 ease-out"
+           :class="isSidebarCollapsed ? 'px-3 justify-center' : 'px-6 justify-between'">
+        <div class="flex min-w-0 items-center gap-3 group cursor-pointer hover:opacity-80 transition-opacity"
+             :class="isSidebarCollapsed ? 'md:hidden' : ''"
+             @click="handleSelectCategory(null)">
+          <div class="h-8 w-8 shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-100">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
           </div>
-          <span class="text-lg font-black text-slate-800 tracking-tight">LinkDock</span>
+          <span class="text-lg font-black text-slate-800 tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300 ease-out"
+                :class="isSidebarCollapsed ? 'md:w-0 md:opacity-0 md:translate-x-2' : 'w-auto opacity-100 translate-x-0'">
+            LinkDock
+          </span>
         </div>
+        <button
+            type="button"
+            class="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm shadow-slate-100 transition-all duration-200 hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600 active:scale-95"
+            :title="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
+            :aria-label="isSidebarCollapsed ? '展开分类栏' : '收起分类栏'"
+            @click.stop="toggleSidebarCollapse"
+        >
+          <PanelLeftOpen v-if="isSidebarCollapsed" class="h-4 w-4" />
+          <PanelLeftClose v-else class="h-4 w-4" />
+        </button>
       </div>
       <Sidebar :categories="categories" :sites="sites" :activeCategoryId="activeCategoryId" :canEdit="true" :draggedSiteId="draggingSiteId"
+               :collapsed="isSidebarCollapsed"
                @select-category="handleSelectCategory" @add-site="openAddSite" @add-category="openAddCategory"
                @edit-category="openEditCategory" @delete-category="deleteCategory"
                @update-categories-order="handleUpdateCategoriesOrder" @move-site-to-category="handleMoveSiteToCategory"/>
@@ -904,6 +977,25 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
                 登录
               </button>
             </div>
+          </div>
+        </div>
+
+        <div v-if="isSidebarMode && duplicateSaveMessage && !showSiteForm" class="px-4 pb-2">
+          <div class="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2.5 shadow-sm">
+            <div class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-xl bg-white text-amber-500 shadow-sm">
+              <AlertTriangle class="h-3.5 w-3.5" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-xs font-black text-amber-700">已保存该网址</p>
+              <p class="mt-0.5 text-[11px] leading-relaxed text-amber-700/80">{{ duplicateSaveMessage }}</p>
+            </div>
+            <button
+                type="button"
+                @click="duplicateSaveMessage = ''"
+                class="shrink-0 rounded-lg px-1.5 py-1 text-[10px] font-bold text-amber-700/70 transition-colors hover:bg-white hover:text-amber-700"
+            >
+              知道了
+            </button>
           </div>
         </div>
 
@@ -1031,16 +1123,8 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
 
         <div v-else class="max-w-6xl mx-auto w-full">
 
-          <div v-if="!isCompactWorkspace" class="mb-8 flex flex-col pb-6 border-b border-slate-200/50">
-            <div class="flex items-center gap-4">
-              <h1 class="text-3xl font-black tracking-tight text-slate-800">
-                {{ activeCategoryId ? categories.find(c => String(c.id) === activeCategoryId)?.name : '所有项目' }}
-              </h1>
-            </div>
-            <p class="text-sm text-slate-400 mt-2 font-medium leading-relaxed max-w-2xl">
-              {{ currentUser ? '在这里管理并探索你的所有灵感与工具。' : '登录后管理你的专属导航书签。' }}
-            </p>
-            <div class="mt-4 flex flex-wrap items-center gap-2">
+          <div v-if="!isCompactWorkspace" class="mb-8 flex flex-col gap-3 pb-6 border-b border-slate-200/50 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex flex-wrap items-center gap-2">
               <button
                   v-for="filter in quickFilters"
                   :key="filter.id"
@@ -1052,6 +1136,15 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
                 <span>{{ filter.label }}</span>
               </button>
             </div>
+            <button
+                v-if="canEdit"
+                @click="activeCategoryId ? openAddSiteWithCategory(activeCategoryId) : openAddSite()"
+                class="inline-flex h-9 w-fit shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-md shadow-blue-200/60 transition-all hover:-translate-y-0.5 hover:bg-blue-700 active:scale-[0.97]"
+                title="添加书签"
+            >
+              <Plus class="h-4 w-4" />
+              <span>添加书签</span>
+            </button>
           </div>
 
           <!-- 正常内容展示 -->
@@ -1066,21 +1159,12 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
 
                   <div class="h-[1px] flex-1 bg-gradient-to-r from-slate-200 to-transparent"></div>
 
-                  <div class="flex items-center gap-2.5 ml-4">
-                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
-                      {{ flatFilteredSites.length }} ITEMS
-                    </span>
-
-                    <button
-                        v-if="canEdit"
-                        @click="openAddSite"
-                        class="group relative w-7 h-7 rounded-[8px] bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-md hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 active:scale-95"
-                        title="添加书签"
-                    >
-                      <Plus class="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                    </button>
-                  </div>
-                </div>
+	                  <div class="flex items-center gap-2.5 ml-4">
+	                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
+	                      {{ visibleFlatFilteredSites.length }} / {{ flatFilteredSites.length }} ITEMS
+	                    </span>
+	                  </div>
+	                </div>
 
                 <div v-if="canDragSites" class="space-y-8">
                   <div v-for="group in visibleDraggableGroups" :key="group.category.id" class="space-y-4">
@@ -1108,44 +1192,21 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
                   </div>
                 </div>
 
-                <div v-else :class="isSidebarMode ? 'grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5'">
-                  <SiteCard v-for="site in flatFilteredSites" :key="site.id" :site="site" :canEdit="true" :compact="isSidebarMode"
-                            @open="handleOpenSite" @toggle-favorite="toggleFavorite" @cycle-status="cycleSiteStatus"
-                            @edit="openEditSite" @delete="deleteSite"/>
-                </div>
+	                <div v-else :class="isSidebarMode ? 'grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5'">
+	                  <SiteCard v-for="site in visibleFlatFilteredSites" :key="site.id" :site="site" :canEdit="true" :compact="isSidebarMode"
+	                            @open="handleOpenSite" @toggle-favorite="toggleFavorite" @cycle-status="cycleSiteStatus"
+	                            @edit="openEditSite" @delete="deleteSite"/>
+	                </div>
               </div>
 
-              <div v-else class="space-y-4">
-                <div v-for="group in (canDragSites ? visibleDraggableGroups : filteredGroupedSites)" :key="group.category.id" class="space-y-4">
-
-                  <div class="flex items-center group/header cursor-default mb-2.5">
-                    <span class="text-xl shrink-0 mr-3">{{ group.category.iconName }}</span>
-                    <h3 class="text-base font-bold text-slate-700 tracking-tight mr-4">{{ group.category.name }}</h3>
-
-                    <div class="h-[1px] flex-1 bg-gradient-to-r from-slate-200 to-transparent"></div>
-
-                    <div class="flex items-center gap-2.5 ml-4">
-                      <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest bg-white px-2.5 py-0.5 rounded-full border border-slate-200">
-                        {{ group.sites.length }} ITEMS
-                      </span>
-
-                      <button
-                          v-if="canEdit"
-                          @click="openAddSiteWithCategory(String(group.category.id))"
-                          class="group relative w-7 h-7 rounded-[8px] bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:border-blue-600 hover:shadow-md hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 active:scale-95"
-                          title="添加书签"
-                      >
-                        <Plus class="w-4 h-4 transition-transform duration-300 group-hover:rotate-90" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <draggable
-                      v-if="canDragSites"
-                      v-model="group.sites"
-                      item-key="id"
-                      :class="isSidebarMode ? 'grid gap-3 min-h-[1.5rem] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 min-h-[1.5rem]'"
-                      ghost-class="site-drag-ghost"
+	              <div v-else class="space-y-4">
+	                <div v-for="group in (canDragSites ? visibleDraggableGroups : visibleFilteredGroupedSites)" :key="group.category.id">
+	                  <draggable
+	                      v-if="canDragSites"
+	                      v-model="group.sites"
+	                      item-key="id"
+	                      :class="isSidebarMode ? 'grid gap-3 min-h-[1.5rem] [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 min-h-[1.5rem]'"
+	                      ghost-class="site-drag-ghost"
                       drag-class="site-drag-active"
                       @start="handleSitesDragStart"
                       @end="handleSitesDragEnd"
@@ -1155,14 +1216,23 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
                     </template>
                   </draggable>
 
-                  <div v-else :class="isSidebarMode ? 'grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5'">
-                    <SiteCard v-for="site in group.sites" :key="site.id" :site="site" :canEdit="true" :compact="isSidebarMode"
-                              @open="handleOpenSite" @toggle-favorite="toggleFavorite" @cycle-status="cycleSiteStatus"
-                              @edit="openEditSite" @delete="deleteSite"/>
-                  </div>
-                </div>
-              </div>
-            </div>
+	                  <div v-else :class="isSidebarMode ? 'grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]' : 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5'">
+	                    <SiteCard v-for="site in group.sites" :key="site.id" :site="site" :canEdit="true" :compact="isSidebarMode"
+	                              @open="handleOpenSite" @toggle-favorite="toggleFavorite" @cycle-status="cycleSiteStatus"
+	                              @edit="openEditSite" @delete="deleteSite"/>
+	                  </div>
+	                </div>
+	              </div>
+
+	              <div v-if="hasMoreFilteredSites" class="flex justify-center pt-2">
+	                <button
+	                    @click="loadMoreSites"
+	                    class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-xs font-bold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-100 hover:text-blue-600 hover:shadow-md active:scale-[0.97]"
+	                >
+	                  加载更多 {{ Math.min(SITE_PAGE_SIZE, flatFilteredSites.length - visibleSiteLimit) }} 个
+	                </button>
+	              </div>
+	            </div>
 
             <!-- 空状态 -->
             <div v-else-if="!isCompactWorkspace" class="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200 shadow-sm">
@@ -1171,11 +1241,11 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
               </div>
               <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">暂时没有发现任何内容</p>
 
-              <button
-                  v-if="canEdit && currentUser"
-                  @click="openAddSite"
-                  class="flex items-center gap-2 px-6 h-10 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-md shadow-blue-200/50 hover:bg-blue-700 hover:-translate-y-px transition-all active:scale-[0.97]"
-              >
+	              <button
+	                  v-if="canEdit && currentUser"
+	                  @click="activeCategoryId ? openAddSiteWithCategory(activeCategoryId) : openAddSite()"
+	                  class="flex items-center gap-2 px-6 h-10 rounded-lg bg-blue-600 text-white font-bold text-sm shadow-md shadow-blue-200/50 hover:bg-blue-700 hover:-translate-y-px transition-all active:scale-[0.97]"
+	              >
                 <Plus class="w-4 h-4" />
                 <span>添加第一个书签</span>
               </button>
@@ -1208,8 +1278,8 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
       <footer v-if="!isCompactWorkspace" class="px-6 md:px-10 py-5 border-t border-slate-200 bg-white text-[11px] font-medium text-slate-500">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div class="leading-relaxed">
-            <span class="font-bold text-slate-700">LinkDock</span>
-            <span class="mx-1.5 text-slate-300">/</span>
+<!--            <span class="font-bold text-slate-700">LinkDock</span>-->
+<!--            <span class="mx-1.5 text-slate-300">/</span>-->
             <span>由个人开发的浏览器书签工作台，欢迎关注和 Star。</span>
           </div>
           <a

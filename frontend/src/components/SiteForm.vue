@@ -29,21 +29,9 @@ const tagsText = ref('');
 const workflowStatus = ref<WorkflowStatus>('unorganized');
 const isFetching = ref(false);
 const hasManuallySelectedCategory = ref(false);
-
-const presetLogos = [
-  { name: 'Default', url: '' },
-  { name: 'GitHub', url: 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png' },
-  { name: 'Google', url: 'https://www.google.com/favicon.ico' },
-  { name: 'React', url: 'https://reactjs.org/favicon.ico' },
-  { name: 'Vue', url: 'https://vuejs.org/logo.png' },
-  { name: 'OpenAI', url: 'https://openai.com/favicon.ico' },
-  { name: 'Bilibili', url: 'https://www.bilibili.com/favicon.ico' },
-  { name: 'YouTube', url: 'https://www.youtube.com/favicon.ico' },
-];
-
-const selectPreset = (urlVal: string) => {
-  icon.value = urlVal;
-};
+const iconLoadError = ref(false);
+const initialNormalizedUrl = ref('');
+const initialIcon = ref('');
 
 const normalizeUrl = (raw: string) => {
   const target = raw.trim();
@@ -60,6 +48,15 @@ const normalizeUrl = (raw: string) => {
 };
 
 const currentNormalizedUrl = computed(() => normalizeUrl(url.value));
+
+const isImageIcon = computed(() => /^https?:\/\//i.test(icon.value.trim()));
+
+const getGeneratedIcon = () => {
+  const source = name.value.trim() || currentHostname.value || url.value.trim();
+  const firstChar = Array.from(source).find(char => /\S/.test(char));
+  if (!firstChar) return '#';
+  return /[a-z]/i.test(firstChar) ? firstChar.toUpperCase() : firstChar;
+};
 
 const duplicateSite = computed(() => {
   if (!currentNormalizedUrl.value) return null;
@@ -109,6 +106,19 @@ const recentCategoryId = computed(() => {
   return window.localStorage.getItem('linkdock-recent-category-id');
 });
 
+const previewIcon = computed(() => icon.value.trim() || getGeneratedIcon());
+
+watch(() => icon.value, () => {
+  iconLoadError.value = false;
+});
+
+watch(currentNormalizedUrl, (nextUrl) => {
+  if (!props.site) return;
+  if (nextUrl && nextUrl !== initialNormalizedUrl.value && icon.value === initialIcon.value) {
+    icon.value = '';
+  }
+});
+
 watch(() => props.isOpen, (val) => {
   if (val) {
     name.value = props.site?.name || props.initialData?.name || '';
@@ -116,9 +126,12 @@ watch(() => props.isOpen, (val) => {
     description.value = props.site?.description || props.initialData?.description || '';
     categoryId.value = props.site?.categoryId || props.initialCategoryId || (props.categories.length > 0 ? props.categories[0].id : '');
     icon.value = props.site?.icon || '';
+    initialIcon.value = props.site?.icon || '';
+    initialNormalizedUrl.value = normalizeUrl(props.site?.url || props.initialData?.url || '');
     tagsText.value = props.site?.tagsText || '';
     workflowStatus.value = props.site?.workflowStatus || 'unorganized';
     isFetching.value = false;
+    iconLoadError.value = false;
     hasManuallySelectedCategory.value = !!props.site;
 
     if (props.initialData?.url && !props.site) {
@@ -134,22 +147,27 @@ watch(() => recommendedCategoryId.value, (nextCategoryId) => {
   }
 });
 
-const handleUrlBlur = async () => {
+const fetchSiteMetadata = async (overwrite = false) => {
   const targetUrl = url.value.trim();
-  if (!targetUrl || props.site) return;
+  if (!targetUrl) return;
   isFetching.value = true;
   try {
     const meta = await api.fetchUrlMetadata(targetUrl);
     if (meta.success) {
-      if (!name.value) name.value = meta.title || '';
-      if (!description.value) description.value = meta.description || '';
-      if (!icon.value) icon.value = meta.icon || '';
+      if (overwrite || !name.value) name.value = meta.title || name.value;
+      if (overwrite || !description.value) description.value = meta.description || description.value;
+      if (overwrite || !icon.value) icon.value = meta.icon || '';
     }
   } catch (error) {
     console.error("Fetch metadata error:", error);
   } finally {
     isFetching.value = false;
   }
+};
+
+const handleUrlBlur = async () => {
+  if (props.site) return;
+  await fetchSiteMetadata(false);
 };
 
 const handleSave = () => {
@@ -159,7 +177,7 @@ const handleSave = () => {
     url: url.value.trim(),
     description: description.value.trim(),
     categoryId: categoryId.value,
-    icon: icon.value.trim(),
+    icon: icon.value.trim() || getGeneratedIcon(),
     tagsText: tagsText.value.trim(),
     workflowStatus: workflowStatus.value,
     isFavorite: props.site?.isFavorite || false,
@@ -181,14 +199,32 @@ const handleSave = () => {
       </DialogHeader>
 
       <div class="px-6 py-1 max-h-[60vh] overflow-y-auto space-y-4 custom-scrollbar">
+        <div class="flex items-center gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 px-4 py-3 shadow-sm">
+          <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white bg-white text-2xl font-black text-slate-700 shadow-md shadow-slate-200/70">
+            <img
+                v-if="isImageIcon && !iconLoadError"
+                :src="icon"
+                class="h-8 w-8 object-contain"
+                referrerpolicy="no-referrer"
+                @error="iconLoadError = true"
+            />
+            <span v-else class="leading-none">{{ previewIcon }}</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-black text-slate-800">{{ name || '等待获取网站信息' }}</p>
+            <p class="mt-1 truncate text-xs font-medium text-slate-400">{{ currentHostname || '输入网址后自动识别 logo、名称和描述' }}</p>
+          </div>
+        </div>
+
         <div v-if="duplicateSite" class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
           <div class="flex items-start gap-3">
             <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-bold text-amber-700">这个网址已经收藏过了</p>
+              <p class="text-sm font-bold text-amber-700">这个网址已经保存过了</p>
               <p class="mt-1 text-xs text-amber-700/80 truncate">
-                已存在于「{{ categories.find(cat => String(cat.id) === String(duplicateSite.categoryId))?.name || '未知分类' }}」中。
+                「{{ duplicateSite.name }}」已存在于「{{ categories.find(cat => String(cat.id) === String(duplicateSite.categoryId))?.name || '未知分类' }}」中。
               </p>
+              <p class="mt-1 truncate text-[11px] text-amber-700/70">{{ duplicateSite.url }}</p>
               <button
                   type="button"
                   @click="emit('edit-existing', duplicateSite)"
@@ -231,10 +267,12 @@ const handleSave = () => {
               <Loader2 class="h-4 w-4 animate-spin text-blue-600" />
             </div>
             <button
-                v-else-if="!site && url"
+                v-else-if="url"
                 type="button"
-                @click="handleUrlBlur"
+                @click="fetchSiteMetadata(true)"
                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                :title="site ? '重新获取网站信息' : '获取网站信息'"
+                :aria-label="site ? '重新获取网站信息' : '获取网站信息'"
             >
               <Wand2 class="h-4 w-4" />
             </button>
@@ -264,29 +302,6 @@ const handleSave = () => {
               class="w-full h-10 px-3 rounded-lg bg-slate-100/50 border border-slate-200 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none"
           />
           <p class="text-[11px] text-slate-400 ml-1">多个标签请用英文逗号分隔。</p>
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">自定义图标</label>
-          <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-lg border border-slate-200 focus-within:bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-            <div class="h-7 w-7 shrink-0 border border-slate-200 bg-white flex items-center justify-center rounded overflow-hidden shadow-sm">
-              <img v-if="icon" :src="icon" class="h-4 w-4 object-contain" />
-              <div v-else class="text-[9px] font-bold text-slate-300">无</div>
-            </div>
-            <input v-model="icon" placeholder="输入图标 URL..." class="flex-1 bg-transparent border-none text-sm font-medium focus:ring-0 outline-none p-0 text-slate-800 placeholder:text-slate-400" />
-          </div>
-          <div class="flex flex-wrap gap-1.5 mt-2">
-            <button
-                v-for="preset in presetLogos"
-                :key="preset.name"
-                @click="selectPreset(preset.url)"
-                type="button"
-                class="px-2 py-1 rounded border border-slate-200 text-[10px] font-bold transition-all"
-                :class="icon === preset.url ? 'bg-blue-50 border-blue-200 text-blue-600 shadow-sm' : 'bg-white text-slate-500 hover:border-slate-300'"
-            >
-              {{ preset.name }}
-            </button>
-          </div>
         </div>
 
         <div class="space-y-1.5">
@@ -329,7 +344,7 @@ const handleSave = () => {
             @click="handleSave"
             :disabled="isFetching || !!duplicateSite"
         >
-          {{ props.initialCategoryId === recentCategoryId && !site ? '保存到最近分类' : '保存' }}
+          {{ duplicateSite ? '已保存该网址' : props.initialCategoryId === recentCategoryId && !site ? '保存到最近分类' : '保存' }}
         </button>
       </div>
     </DialogContent>
