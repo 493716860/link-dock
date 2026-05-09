@@ -12,12 +12,12 @@ function createContextMenus() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'linkdock-save-page',
-      title: '保存当前页到 LinkDock',
+      title: '保存当前页到轻舟',
       contexts: ['page'],
     });
     chrome.contextMenus.create({
       id: 'linkdock-save-link',
-      title: '保存这个链接到 LinkDock',
+      title: '保存这个链接到轻舟',
       contexts: ['link'],
     });
     chrome.contextMenus.create({

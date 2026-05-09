@@ -281,7 +281,7 @@ const handleSave = () => {
 
         <div class="space-y-1.5">
           <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest ml-1">网站名称</label>
-          <input v-model="name" placeholder="LinkDock" autocomplete="off" class="w-full h-10 px-3 rounded-lg bg-slate-100/50 border border-slate-200 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none" />
+          <input v-model="name" placeholder="轻舟" autocomplete="off" class="w-full h-10 px-3 rounded-lg bg-slate-100/50 border border-slate-200 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none" />
         </div>
 
         <div class="space-y-1.5">

@@ -930,14 +930,12 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
 	        <div class="flex min-w-0 items-center gap-3 group cursor-pointer hover:opacity-80 transition-opacity"
 	             :class="isSidebarCollapsed ? 'md:hidden' : ''"
 	             @click="handleSelectCategory(null)">
-          <div class="h-8 w-8 shrink-0 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-100">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
+          <div class="h-8 w-8 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md shadow-slate-100">
+            <img src="/logo.png" alt="轻舟" class="h-full w-full object-cover" />
           </div>
           <span class="text-lg font-black text-slate-800 tracking-tight whitespace-nowrap overflow-hidden transition-all duration-300 ease-out"
                 :class="isSidebarCollapsed ? 'md:w-0 md:opacity-0 md:translate-x-2' : 'w-auto opacity-100 translate-x-0'">
-            LinkDock
+            轻舟
           </span>
         </div>
 	      </div>
@@ -960,13 +958,11 @@ const handleMoveSiteToCategory = async ({ siteId, categoryId }: { siteId: string
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <div class="flex items-center gap-2">
-                <div class="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm shadow-slate-200">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                  </svg>
+                <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm shadow-slate-200">
+                  <img src="/logo.png" alt="轻舟" class="h-full w-full object-cover" />
                 </div>
                 <div>
-                  <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-800">LinkDock</p>
+                  <p class="text-[11px] font-black uppercase tracking-[0.24em] text-slate-800">轻舟</p>
                   <p class="mt-0.5 text-[11px] text-slate-400">
                     {{ currentUser ? `你好，${currentUser.username}` : '浏览你的扩展工作台' }}
                   </p>
