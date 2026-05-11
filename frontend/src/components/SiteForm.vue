@@ -174,7 +174,7 @@ const handleSave = () => {
   if (!name.value.trim() || !url.value.trim() || !categoryId.value || duplicateSite.value) return;
   emit('save', {
     name: name.value.trim(),
-    url: url.value.trim(),
+    url: currentNormalizedUrl.value || url.value.trim(),
     description: description.value.trim(),
     categoryId: categoryId.value,
     icon: icon.value.trim() || getGeneratedIcon(),

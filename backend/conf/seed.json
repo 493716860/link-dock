@@ -51,113 +51,127 @@
       "id": "site_ai_1",
       "categoryId": "cat_ai",
       "name": "ChatGPT",
-      "url": "https://chatgpt.com",
+      "url": "https://chatgpt.com/",
       "description": "OpenAI 旗下领先的 AI 对话模型",
-      "icon": "https://chatgpt.com/favicon.ico"
+      "icon": "https://chatgpt.com/favicon.ico",
+      "sortOrder": 0
     },
     {
       "id": "site_ai_2",
       "categoryId": "cat_ai",
       "name": "Claude",
-      "url": "https://claude.ai",
+      "url": "https://claude.ai/",
       "description": "Anthropic 智能对话助手，长文本处理能力出色",
-      "icon": "https://www.google.com/s2/favicons?domain=claude.ai\u0026sz=128"
+      "icon": "https://www.google.com/s2/favicons?domain=claude.ai\u0026sz=128",
+      "sortOrder": 1
     },
     {
       "id": "site_ai_3",
       "categoryId": "cat_ai",
       "name": "Poe",
-      "url": "https://poe.com",
+      "url": "https://poe.com/",
       "description": "Quora 旗下的多 AI 模型集成平台",
-      "icon": "https://poe.com/favicon.ico"
+      "icon": "https://poe.com/favicon.ico",
+      "sortOrder": 2
     },
     {
       "id": "site_dev_1",
       "categoryId": "cat_dev",
       "name": "GitHub",
-      "url": "https://github.com",
+      "url": "https://github.com/",
       "description": "全球最大的开源代码托管平台",
-      "icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+      "icon": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+      "sortOrder": 3
     },
     {
       "id": "site_dev_2",
       "categoryId": "cat_dev",
       "name": "V2EX",
-      "url": "https://v2ex.com",
+      "url": "https://v2ex.com/",
       "description": "创意工作者们的社区，程序员聚集地",
-      "icon": "https://v2ex.com/static/icon-192.png"
+      "icon": "https://v2ex.com/static/icon-192.png",
+      "sortOrder": 4
     },
     {
       "id": "site_dev_3",
       "categoryId": "cat_dev",
       "name": "稀土掘金",
-      "url": "https://juejin.cn",
+      "url": "https://juejin.cn/",
       "description": "高质量的中文开发者技术社区",
-      "icon": ""
+      "icon": "",
+      "sortOrder": 5
     },
     {
       "id": "site_tools_1",
       "categoryId": "cat_tools",
       "name": "Notion",
-      "url": "https://www.notion.so",
+      "url": "https://www.notion.so/",
       "description": "全能型笔记与项目管理工具",
-      "icon": "https://www.notion.so/front-static/favicon.ico"
+      "icon": "https://www.notion.so/front-static/favicon.ico",
+      "sortOrder": 6
     },
     {
       "id": "site_tools_2",
       "categoryId": "cat_tools",
       "name": "TinyPNG",
-      "url": "https://tinypng.com",
+      "url": "https://tinypng.com/",
       "description": "在线图片压缩利器",
-      "icon": "https://tinypng.com/images/favicon.ico"
+      "icon": "https://tinypng.com/images/favicon.ico",
+      "sortOrder": 7
     },
     {
       "id": "site_media_1",
       "categoryId": "cat_media",
       "name": "Bilibili",
-      "url": "https://www.bilibili.com",
+      "url": "https://www.bilibili.com/",
       "description": "国内领先的年轻人文化社区和视频网站",
-      "icon": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico"
+      "icon": "https://i0.hdslb.com/bfs/static/jinkela/long/images/favicon.ico",
+      "sortOrder": 8
     },
     {
       "id": "site_media_2",
       "categoryId": "cat_media",
       "name": "YouTube",
-      "url": "https://www.youtube.com",
+      "url": "https://www.youtube.com/",
       "description": "全球最大的视频分享平台",
-      "icon": "https://www.youtube.com/s/desktop/42939318/img/favicon.ico"
+      "icon": "https://www.youtube.com/s/desktop/42939318/img/favicon.ico",
+      "sortOrder": 9
     },
     {
       "id": "site_design_1",
       "categoryId": "cat_design",
       "name": "Figma",
-      "url": "https://www.figma.com",
+      "url": "https://www.figma.com/",
       "description": "基于浏览器的协同设计工具",
-      "icon": "https://static.figma.com/app/icon/2/icon-128.png"
+      "icon": "https://static.figma.com/app/icon/2/icon-128.png",
+      "sortOrder": 10
     },
     {
       "id": "site_design_2",
       "categoryId": "cat_design",
       "name": "Iconfont",
-      "url": "https://www.iconfont.cn",
+      "url": "https://www.iconfont.cn/",
       "description": "阿里巴巴矢量图标库",
-      "icon": "https://img.alicdn.com/imgextra/i4/O1CN01Z5paLz1O0zuCC7osS_!!6000000001644-55-tps-83-82.svg"
+      "icon": "https://img.alicdn.com/imgextra/i4/O1CN01Z5paLz1O0zuCC7osS_!!6000000001644-55-tps-83-82.svg",
+      "sortOrder": 11
     },
     {
       "id": "site_learn_1",
       "categoryId": "cat_learn",
       "name": "MDN Web Docs",
-      "url": "https://developer.mozilla.org",
+      "url": "https://developer.mozilla.org/",
       "description": "最权威的 Web 开发技术文档",
-      "icon": "https://developer.mozilla.org/favicon.ico"
+      "icon": "https://developer.mozilla.org/favicon.ico",
+      "sortOrder": 12
     },
     {
       "id": "site_learn_2",
       "categoryId": "cat_learn",
       "name": "Coursera",
-      "url": "https://www.coursera.org",
+      "url": "https://www.coursera.org/",
       "description": "全球顶级大学在线课程平台",
-      "icon": "https://d3njjcbhbojbot.cloudfront.net/web/images/favicons/favicon-v2-194x194.png"
+      "icon": "https://d3njjcbhbojbot.cloudfront.net/web/images/favicons/favicon-v2-194x194.png",
+      "sortOrder": 13
     },
     {
       "id": "site_mow9b4x7",
@@ -165,7 +179,8 @@
       "name": "BOSS直聘",
       "url": "https://www.zhipin.com/suzhou/?ka=header-home",
       "description": "BOSS直聘苏州招聘网站，为求职者提供海量2026年05月08日最新苏州人才招聘信息。BOSS直聘苏州招聘网让求职者与Boss直接开聊、加快面试、即时反馈，找工作就来BOSS直聘和Boss开聊吧！",
-      "icon": "https://static.zhipin.com/favicon.ico"
+      "icon": "https://static.zhipin.com/favicon.ico",
+      "sortOrder": 14
     },
     {
       "id": "site_mown4i64",
@@ -173,7 +188,8 @@
       "name": "鸿途智行",
       "url": "https://www.allinoneearth.com/zh-CN",
       "description": "Meta description",
-      "icon": "https://www.allinoneearth.com/logo.svg"
+      "icon": "https://www.allinoneearth.com/logo.svg",
+      "sortOrder": 15
     },
     {
       "id": "site_mown5e5c",
@@ -181,7 +197,17 @@
       "name": "SeekingChina",
       "url": "https://www.seeking-china.com/home",
       "description": "SeekingChina",
-      "icon": "https://www.seeking-china.com/logo.png"
+      "icon": "https://www.seeking-china.com/logo.png",
+      "sortOrder": 16
+    },
+    {
+      "id": "site_mp0iqi8s",
+      "categoryId": "default",
+      "name": "新书签",
+      "url": "https://www.baidu.com/",
+      "description": "",
+      "icon": "",
+      "sortOrder": 17
     }
   ]
 }

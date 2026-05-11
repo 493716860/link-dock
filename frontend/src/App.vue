@@ -82,6 +82,8 @@ const normalizeUrl = (raw?: string) => {
   }
 };
 
+const getOpenableUrl = (raw?: string) => normalizeUrl(raw) || (raw || '').trim();
+
 const getHostname = (raw?: string) => {
   const normalized = normalizeUrl(raw);
   if (!normalized) return '';
@@ -606,7 +608,7 @@ const handleOpenSite = async (site: Site) => {
       console.error('Track site visit failed:', error);
     }
   }
-  window.open(site.url, '_blank');
+  window.open(getOpenableUrl(site.url), '_blank', 'noopener,noreferrer');
 }
 
 const toggleFavorite = async (site: Site) => {

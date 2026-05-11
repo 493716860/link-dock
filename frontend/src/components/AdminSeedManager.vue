@@ -210,6 +210,20 @@ const fillSiteMetadata = async (site: SeedSite) => {
   }
 };
 
+const normalizeSiteUrl = (raw: string) => {
+  const target = raw.trim();
+  if (!target) return '';
+  try {
+    const parsed = new URL(/^https?:\/\//i.test(target) ? target : `https://${target}`);
+    parsed.hash = '';
+    if (parsed.pathname === '/') parsed.pathname = '';
+    parsed.hostname = parsed.hostname.toLowerCase();
+    return parsed.toString();
+  } catch {
+    return target;
+  }
+};
+
 const saveSeedData = async () => {
   errorMessage.value = validationError.value;
   successMessage.value = '';
@@ -227,7 +241,7 @@ const saveSeedData = async () => {
         id: site.id.trim(),
         categoryId: site.categoryId,
         name: site.name.trim(),
-        url: site.url.trim(),
+        url: normalizeSiteUrl(site.url),
         description: site.description.trim(),
         icon: (site.icon || '').trim(),
         sortOrder: index,

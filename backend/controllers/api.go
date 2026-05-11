@@ -570,6 +570,73 @@ type FetchMetaRequest struct {
 	Url string `json:"url"`
 }
 
+func firstMetaContent(doc *goquery.Document, selectors ...string) string {
+	for _, selector := range selectors {
+		if content, ok := doc.Find(selector).First().Attr("content"); ok {
+			if value := strings.TrimSpace(content); value != "" {
+				return value
+			}
+		}
+	}
+	return ""
+}
+
+func fallbackFaviconURL(host string) string {
+	return "https://www.google.com/s2/favicons?domain=" + url.QueryEscape(host) + "&sz=128"
+}
+
+func resolveMetadataIcon(doc *goquery.Document, baseURL *url.URL) string {
+	var iconURL string
+	iconSelectors := []string{
+		"link[rel~='apple-touch-icon']",
+		"link[rel~='apple-touch-icon-precomposed']",
+		"link[rel~='icon']",
+		"link[rel~='shortcut'][rel~='icon']",
+		"link[rel='shortcut icon']",
+	}
+
+	for _, selector := range iconSelectors {
+		doc.Find(selector).EachWithBreak(func(_ int, selection *goquery.Selection) bool {
+			href, ok := selection.Attr("href")
+			if !ok {
+				return true
+			}
+
+			href = strings.TrimSpace(href)
+			if href == "" {
+				return true
+			}
+
+			lowerHref := strings.ToLower(href)
+			if strings.HasPrefix(lowerHref, "data:") ||
+				strings.HasPrefix(lowerHref, "javascript:") ||
+				strings.HasPrefix(lowerHref, "about:") ||
+				strings.HasPrefix(lowerHref, "blob:") {
+				return true
+			}
+
+			parsedIconURL, err := url.Parse(href)
+			if err != nil {
+				return true
+			}
+
+			resolvedURL := baseURL.ResolveReference(parsedIconURL)
+			if resolvedURL.Scheme != "http" && resolvedURL.Scheme != "https" {
+				return true
+			}
+
+			iconURL = resolvedURL.String()
+			return false
+		})
+
+		if iconURL != "" {
+			return iconURL
+		}
+	}
+
+	return fallbackFaviconURL(baseURL.Host)
+}
+
 func (c *DataController) FetchMetadata() {
 	var req FetchMetaRequest
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &req); err != nil {
@@ -581,7 +648,7 @@ func (c *DataController) FetchMetadata() {
 
 	targetUrl := strings.TrimSpace(req.Url)
 	if !strings.HasPrefix(targetUrl, "http://") && !strings.HasPrefix(targetUrl, "https://") {
-		targetUrl = "http://" + targetUrl
+		targetUrl = "https://" + targetUrl
 	}
 
 	parsedUrl, err := url.Parse(targetUrl)
@@ -611,23 +678,24 @@ func (c *DataController) FetchMetadata() {
 		return
 	}
 
-	title := strings.TrimSpace(doc.Find("title").First().Text())
-	desc, _ := doc.Find("meta[name='description']").Attr("content")
-
-	iconUrl, _ := doc.Find("link[rel='icon'], link[rel='shortcut icon']").Attr("href")
-	if iconUrl != "" {
-		if !strings.HasPrefix(iconUrl, "http") {
-			if strings.HasPrefix(iconUrl, "//") {
-				iconUrl = parsedUrl.Scheme + ":" + iconUrl
-			} else if strings.HasPrefix(iconUrl, "/") {
-				iconUrl = parsedUrl.Scheme + "://" + parsedUrl.Host + iconUrl
-			} else {
-				iconUrl = parsedUrl.Scheme + "://" + parsedUrl.Host + "/" + iconUrl
-			}
-		}
-	} else {
-		iconUrl = "https://www.google.com/s2/favicons?domain=" + parsedUrl.Host + "&sz=128"
+	title := firstMetaContent(
+		doc,
+		"meta[property='og:title']",
+		"meta[name='twitter:title']",
+		"meta[name='title']",
+	)
+	if title == "" {
+		title = strings.TrimSpace(doc.Find("title").First().Text())
 	}
+
+	desc := firstMetaContent(
+		doc,
+		"meta[name='description']",
+		"meta[property='og:description']",
+		"meta[name='twitter:description']",
+	)
+
+	iconUrl := resolveMetadataIcon(doc, parsedUrl)
 
 	c.Data["json"] = map[string]interface{}{
 		"success":     true,
